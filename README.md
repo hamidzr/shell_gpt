@@ -358,6 +358,7 @@ This is just some examples of what we can do using OpenAI GPT models, I'm sure y
 
 ### Runtime configuration file
 You can setup some parameters in runtime configuration file `~/.config/shell_gpt/.sgptrc`:
+Path values for `ROLE_STORAGE_PATH`, `OPENAI_FUNCTIONS_PATH`, `CHAT_CACHE_PATH`, and `CACHE_PATH` support `~` and `$HOME` expansion.
 ```text
 # API key, also it is possible to define OPENAI_API_KEY env.
 OPENAI_API_KEY=your_api_key

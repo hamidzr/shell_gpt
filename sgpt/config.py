@@ -40,6 +40,13 @@ DEFAULT_CONFIG = {
     # New features might add their own config variables here.
 }
 
+PATH_CONFIG_KEYS = {
+    "ROLE_STORAGE_PATH",
+    "OPENAI_FUNCTIONS_PATH",
+    "CHAT_CACHE_PATH",
+    "CACHE_PATH",
+}
+
 
 class Config(dict):  # type: ignore
     def __init__(self, config_path: Path, **defaults: Any):
@@ -86,6 +93,8 @@ class Config(dict):  # type: ignore
         value = os.getenv(key) or super().get(key)
         if not value:
             raise UsageError(f"Missing config key: {key}")
+        if key in PATH_CONFIG_KEYS:
+            return os.path.expanduser(os.path.expandvars(value))
         return value
 
 
