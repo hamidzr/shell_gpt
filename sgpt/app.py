@@ -20,6 +20,7 @@ from sgpt.utils import (
     get_edited_prompt,
     get_sgpt_version,
     install_shell_integration,
+    replicate_to_host,
     run_command,
 )
 
@@ -155,7 +156,17 @@ def main(
         callback=inst_funcs,
         hidden=True,  # Hiding since should be used only once.
     ),
+    replicate: str = typer.Option(
+        None,
+        "--replicate",
+        help="Bootstrap ShellGPT on a remote SSH target and copy local config.",
+        rich_help_panel="Setup Options",
+    ),
 ) -> None:
+    if replicate:
+        replicate_to_host(replicate)
+        raise typer.Exit()
+
     stdin_passed = not sys.stdin.isatty()
 
     if stdin_passed:

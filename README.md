@@ -14,6 +14,13 @@ By default, ShellGPT uses OpenAI's API and GPT-4 model. You'll need an API key, 
 >
 > **❗️Note that ShellGPT is not optimized for local models and may not work as expected.**
 
+### Replicate setup to a remote host
+If you want to bootstrap ShellGPT on another machine and copy your local ShellGPT config (including `.sgptrc`, roles, and functions), use:
+```shell
+sgpt --replicate user@host
+```
+This command uses `ssh`/`scp`, installs `uv` when needed, installs `shell-gpt`, and copies `~/.config/shell_gpt` to the remote host.
+
 ## Usage
 **ShellGPT** is designed to quickly analyse and retrieve information. It's useful for straightforward requests ranging from technical configurations to general knowledge.
 ```shell
@@ -429,6 +436,9 @@ Possible options for `CODE_THEME`: https://pygments.org/styles/
 │ --create-role           TEXT  Create role. [default: None]                                               │
 │ --show-role             TEXT  Show role. [default: None]                                                 │
 │ --list-roles   -lr            List roles.                                                                │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Setup Options ──────────────────────────────────────────────────────────────────────────────────────────╮
+│ --replicate  TEXT  Bootstrap ShellGPT on a remote SSH target and copy local config. [default: None]    │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
