@@ -187,3 +187,22 @@ def test_shell_no_interaction(completion):
     assert result.exit_code == 0
     assert "git commit" in result.output
     assert "[E]xecute" not in result.output
+
+
+@patch("sgpt.function.get_openai_schemas")
+@patch("sgpt.handlers.handler.completion")
+def test_shell_skips_function_schema_loading(completion, get_openai_schemas):
+    completion.return_value = mock_comp("git status")
+
+    args = [
+        "make a commit using git",
+        "--shell",
+        "--no-interaction",
+        "--functions",
+        "--no-cache",
+    ]
+    result = runner.invoke(app, args)
+
+    get_openai_schemas.assert_not_called()
+    assert result.exit_code == 0
+    assert "git status" in result.output

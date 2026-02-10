@@ -4,32 +4,43 @@ from typing import Any, Callable, Dict, Generator, List, Optional
 
 from ..cache import Cache
 from ..config import cfg
-from ..function import get_function
 from ..printer import MarkdownPrinter, Printer, TextPrinter
 from ..role import DefaultRoles, SystemRole
 
-completion: Callable[..., Any] = lambda *args, **kwargs: Generator[Any, None, None]
+completion: Optional[Callable[..., Any]] = None
 
-base_url = cfg.get("API_BASE_URL")
 use_litellm = cfg.get("USE_LITELLM") == "true"
-additional_kwargs = {
-    "timeout": int(cfg.get("REQUEST_TIMEOUT")),
-    "api_key": cfg.get("OPENAI_API_KEY"),
-    "base_url": None if base_url == "default" else base_url,
-}
+completion_kwargs: Dict[str, Any] = {}
 
-if use_litellm:
-    import litellm  # type: ignore
 
-    completion = litellm.completion
-    litellm.suppress_debug_info = True
-    additional_kwargs.pop("api_key")
-else:
+def get_provider_completion() -> tuple[Callable[..., Any], Dict[str, Any]]:
+    global completion, completion_kwargs
+
+    if completion is not None:
+        return completion, dict(completion_kwargs)
+
+    base_url = cfg.get("API_BASE_URL")
+    provider_kwargs = {
+        "timeout": int(cfg.get("REQUEST_TIMEOUT")),
+        "api_key": cfg.get("OPENAI_API_KEY"),
+        "base_url": None if base_url == "default" else base_url,
+    }
+
+    if use_litellm:
+        import litellm  # type: ignore
+
+        litellm.suppress_debug_info = True
+        completion = litellm.completion
+        provider_kwargs.pop("api_key")
+        completion_kwargs = provider_kwargs
+        return completion, dict(completion_kwargs)
+
     from openai import OpenAI
 
-    client = OpenAI(**additional_kwargs)  # type: ignore
+    client = OpenAI(**provider_kwargs)  # type: ignore
     completion = client.chat.completions.create
-    additional_kwargs = {}
+    completion_kwargs = {}
+    return completion, dict(completion_kwargs)
 
 
 class Handler:
@@ -85,6 +96,8 @@ class Handler:
         joined_args = ", ".join(f'{k}="{v}"' for k, v in dict_args.items())
         yield f"> @FunctionCall `{name}({joined_args})` \n\n"
 
+        from ..function import get_function
+
         result = get_function(name)(**dict_args)
         if cfg.get("SHOW_FUNCTIONS_OUTPUT") == "true":
             yield f"```text\n{result}\n```\n"
@@ -110,18 +123,20 @@ class Handler:
         if is_shell_role or is_code_role or is_dsc_shell_role:
             functions = None
 
+        completion_func, provider_kwargs = get_provider_completion()
+        request_kwargs = dict(provider_kwargs)
         if functions:
-            additional_kwargs["tool_choice"] = "auto"
-            additional_kwargs["tools"] = functions
-            additional_kwargs["parallel_tool_calls"] = False
+            request_kwargs["tool_choice"] = "auto"
+            request_kwargs["tools"] = functions
+            request_kwargs["parallel_tool_calls"] = False
 
-        response = completion(
+        response = completion_func(
             model=model,
             temperature=temperature,
             top_p=top_p,
             messages=messages,
             stream=True,
-            **additional_kwargs,
+            **request_kwargs,
         )
 
         try:
